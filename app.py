@@ -649,6 +649,17 @@ with tabs[3]:
     ).reset_index()
     genre_year = genre_year[genre_year["year"] >= 1980]
 
+    # Use the full dataset for animation so all genres appear,
+    # while still respecting the selected year range.
+    anim_source = df[(df["year"] >= year_range[0]) & (df["year"] <= year_range[1])].copy()
+
+    genre_year = anim_source.groupby(["year", "playlist_genre"]).agg(
+        energy=("energy", "mean"),
+        valence=("valence", "mean"),
+        count=("track_id", "count"),
+        danceability=("danceability", "mean")
+    ).reset_index()
+
     fig_anim = px.scatter(
         genre_year, x="energy", y="valence",
         animation_frame="year", animation_group="playlist_genre",
@@ -662,8 +673,55 @@ with tabs[3]:
                            title_font=dict(size=13, color="#f0c040"))
     fig_anim.update_xaxes(**AXIS_STYLE)
     fig_anim.update_yaxes(**AXIS_STYLE)
-    fig_anim.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 600
+    if fig_anim.layout.updatemenus:
+        fig_anim.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 600
     st.plotly_chart(fig_anim, use_container_width=True)
+
+    # Animated time-series chart, matching the cumulative reveal style from the notebook.
+    st.markdown("### Animated Time-Series: Emotional Audio Features")
+
+    yearly_anim = (
+        df[(df["year"] >= year_range[0]) & (df["year"] <= year_range[1])]
+        .groupby("year")[["energy", "valence", "danceability"]]
+        .mean()
+        .reset_index()
+    )
+
+    yearly_anim_long = yearly_anim.melt(
+        id_vars="year",
+        value_vars=["energy", "valence", "danceability"],
+        var_name="Audio Feature",
+        value_name="Average Score"
+    )
+
+    frames = []
+    for frame_year in sorted(yearly_anim_long["year"].unique()):
+        temp = yearly_anim_long[yearly_anim_long["year"] <= frame_year].copy()
+        temp["frame_year"] = frame_year
+        frames.append(temp)
+
+    if frames:
+        yearly_anim_cumulative = pd.concat(frames)
+
+        fig_time_anim = px.line(
+            yearly_anim_cumulative,
+            x="year",
+            y="Average Score",
+            color="Audio Feature",
+            animation_frame="frame_year",
+            markers=True,
+            range_y=[0, 1],
+            title="Animated Time-Series of Emotional Audio Features",
+            color_discrete_sequence=["#f87171", "#c084fc", "#4ade80"]
+        )
+
+        fig_time_anim.update_layout(**PLOTLY_TEMPLATE, height=430,
+                                    title_font=dict(size=13, color="#f0c040"))
+        fig_time_anim.update_xaxes(**AXIS_STYLE)
+        fig_time_anim.update_yaxes(**AXIS_STYLE)
+        if fig_time_anim.layout.updatemenus:
+            fig_time_anim.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 500
+        st.plotly_chart(fig_time_anim, use_container_width=True)
 
     # Mood share over time
     st.markdown("### Mood Share by Decade")
@@ -672,11 +730,12 @@ with tabs[3]:
     decade_mood = fdf2.groupby(["decade","mood_category"]).size().reset_index(name="count")
     fig_dec = px.bar(
         decade_mood, x="decade", y="count", color="mood_category",
-        color_discrete_map=MOOD_COLORS, barmode="stack", barnorm="fraction",
+        color_discrete_map=MOOD_COLORS, barmode="stack",
         title="Proportional Mood Shift Across Decades"
     )
     fig_dec.update_layout(**PLOTLY_TEMPLATE, height=340,
                           title_font=dict(size=13, color="#f0c040"),
+                          barnorm="fraction",
                           yaxis_tickformat=".0%")
     fig_dec.update_xaxes(**AXIS_STYLE)
     fig_dec.update_yaxes(**AXIS_STYLE)
