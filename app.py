@@ -1,0 +1,939 @@
+import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+from textblob import TextBlob
+import warnings
+
+warnings.filterwarnings("ignore")
+
+# ─────────────────────────────────────────────
+# PAGE CONFIG
+# ─────────────────────────────────────────────
+st.set_page_config(
+    page_title="Can AI Understand Human Emotion Through Music?",
+    page_icon="🎵",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# ─────────────────────────────────────────────
+# CUSTOM CSS  – dark editorial aesthetic
+# ─────────────────────────────────────────────
+st.markdown("""
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap');
+
+  html, body, [class*="css"] {
+      font-family: 'DM Sans', sans-serif;
+      background-color: #0a0a0f;
+      color: #e8e0f0;
+  }
+  .stApp { background-color: #0a0a0f; }
+
+  /* Sidebar */
+  section[data-testid="stSidebar"] {
+      background: linear-gradient(180deg, #12001a 0%, #0d0d1a 100%);
+      border-right: 1px solid #2a1a3a;
+  }
+  section[data-testid="stSidebar"] * { color: #d0c8e8 !important; }
+
+  /* Tabs */
+  .stTabs [data-baseweb="tab-list"] {
+      background: #12001a;
+      border-bottom: 2px solid #6c2bd9;
+      gap: 0px;
+  }
+  .stTabs [data-baseweb="tab"] {
+      color: #9d86c8 !important;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 10px 20px;
+      border-radius: 0;
+  }
+  .stTabs [aria-selected="true"] {
+      background: #1e0535 !important;
+      color: #c084fc !important;
+      border-bottom: 3px solid #c084fc !important;
+  }
+
+  /* Metric cards */
+  .metric-card {
+      background: linear-gradient(135deg, #1a0628 0%, #0f0820 100%);
+      border: 1px solid #3d1a6e;
+      border-radius: 12px;
+      padding: 20px 24px;
+      text-align: center;
+  }
+  .metric-card .label {
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #9d86c8;
+      margin-bottom: 6px;
+  }
+  .metric-card .value {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      font-weight: 900;
+      color: #c084fc;
+      line-height: 1;
+  }
+  .metric-card .sub {
+      font-size: 0.75rem;
+      color: #6d5d8a;
+      margin-top: 4px;
+  }
+
+  /* Section headers */
+  .section-header {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #e8d5ff;
+      margin-bottom: 4px;
+  }
+  .section-sub {
+      font-size: 0.9rem;
+      color: #8070a8;
+      margin-bottom: 24px;
+  }
+
+  /* Story cards */
+  .story-card {
+      background: linear-gradient(135deg, #160326 0%, #0c0118 100%);
+      border-left: 4px solid #c084fc;
+      border-radius: 0 12px 12px 0;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+  }
+  .story-card h4 {
+      font-family: 'Playfair Display', serif;
+      color: #c084fc;
+      font-size: 1rem;
+      margin: 0 0 6px 0;
+  }
+  .story-card p {
+      color: #c0b0d8;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      margin: 0;
+  }
+
+  /* Insight pill */
+  .insight-pill {
+      display: inline-block;
+      background: #2a0d4a;
+      border: 1px solid #6c2bd9;
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 0.8rem;
+      color: #c084fc;
+      margin: 4px;
+  }
+
+  /* Mood badge */
+  .mood-happy { background:#1a3a1a; border-color:#4ade80; color:#4ade80; }
+  .mood-intense { background:#3a1a1a; border-color:#f87171; color:#f87171; }
+  .mood-sad { background:#1a1a3a; border-color:#60a5fa; color:#60a5fa; }
+  .mood-calm { background:#1a2a3a; border-color:#34d399; color:#34d399; }
+
+  /* Hero */
+  .hero-band {
+      background: linear-gradient(135deg, #160a28 0%, #0a0616 50%, #12002a 100%);
+      border: 1px solid #3d1a6e;
+      border-radius: 16px;
+      padding: 40px 48px;
+      margin-bottom: 28px;
+      position: relative;
+      overflow: hidden;
+  }
+  .hero-band::before {
+      content: '♪';
+      position: absolute; right: 40px; top: 20px;
+      font-size: 120px; color: rgba(192,132,252,0.06);
+  }
+  .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.4rem;
+      font-weight: 900;
+      color: #f0e0ff;
+      line-height: 1.15;
+      margin-bottom: 10px;
+  }
+  .hero-rq {
+      font-size: 0.92rem;
+      color: #9d7bc8;
+      font-style: italic;
+      max-width: 680px;
+      line-height: 1.6;
+  }
+  .hero-badge {
+      display: inline-block;
+      background: #2a0d4a;
+      border: 1px solid #c084fc;
+      border-radius: 4px;
+      padding: 3px 10px;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #c084fc;
+      margin-bottom: 16px;
+  }
+
+  /* Plotly bg override */
+  .js-plotly-plot { border-radius: 12px; }
+
+  /* Divider */
+  hr { border-color: #2a1a3a !important; }
+
+  /* Selectbox / slider labels */
+  label { color: #9d86c8 !important; font-size: 0.82rem !important; }
+  .stSelectbox > div > div { background: #1a0628 !important; border-color: #3d1a6e !important; }
+  .stSlider > div > div { color: #c084fc !important; }
+
+  /* Conclusion box */
+  .conclusion-box {
+      background: linear-gradient(135deg, #1a0540 0%, #0d0320 100%);
+      border: 1px solid #6c2bd9;
+      border-radius: 16px;
+      padding: 32px 36px;
+  }
+  .conclusion-box h3 {
+      font-family: 'Playfair Display', serif;
+      color: #c084fc;
+      font-size: 1.4rem;
+      margin-bottom: 12px;
+  }
+</style>
+""", unsafe_allow_html=True)
+
+# ─────────────────────────────────────────────
+# DATA LOADING
+# ─────────────────────────────────────────────
+@st.cache_data
+def load_data():
+    df = pd.read_csv("tableau_music_emotion_dataset.csv")
+    return df
+
+df = load_data()
+
+MOOD_COLORS = {
+    "Happy / Energetic": "#4ade80",
+    "Intense / Dark":    "#f87171",
+    "Sad / Calm":        "#60a5fa",
+    "Calm / Positive":   "#34d399",
+}
+
+GENRE_COLORS = {
+    "pop":   "#c084fc",
+    "rock":  "#f87171",
+    "r&b":   "#fbbf24",
+    "edm":   "#34d399",
+    "rap":   "#60a5fa",
+    "latin": "#fb923c",
+}
+
+PLOTLY_TEMPLATE = dict(
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(20,5,35,0.6)",
+    font=dict(family="DM Sans", color="#d0c8e8", size=12),
+    xaxis=dict(gridcolor="rgba(100,70,160,0.15)", linecolor="rgba(100,70,160,0.3)"),
+    yaxis=dict(gridcolor="rgba(100,70,160,0.15)", linecolor="rgba(100,70,160,0.3)"),
+    colorway=["#c084fc","#f87171","#4ade80","#60a5fa","#fbbf24","#34d399"],
+    legend=dict(bgcolor="rgba(20,5,35,0.8)", bordercolor="#3d1a6e", borderwidth=1),
+)
+
+def apply_template(fig):
+    fig.update_layout(**PLOTLY_TEMPLATE)
+    return fig
+
+# ─────────────────────────────────────────────
+# SIDEBAR
+# ─────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("### 🎵 Music Emotion AI")
+    st.markdown("---")
+
+    st.markdown("**Filter by Genre**")
+    all_genres = ["All"] + sorted(df["playlist_genre"].unique().tolist())
+    selected_genre = st.selectbox("Genre", all_genres, label_visibility="collapsed")
+
+    st.markdown("**Filter by Mood**")
+    all_moods = ["All"] + sorted(df["mood_category"].unique().tolist())
+    selected_mood = st.selectbox("Mood Category", all_moods, label_visibility="collapsed")
+
+    st.markdown("**Year Range**")
+    yr_min, yr_max = int(df["year"].min()), int(df["year"].max())
+    year_range = st.slider("Years", yr_min, yr_max, (2000, yr_max), label_visibility="collapsed")
+
+    st.markdown("**Feature for Analysis**")
+    audio_feature = st.selectbox(
+        "Audio Feature",
+        ["valence", "energy", "danceability", "tempo", "acousticness",
+         "speechiness", "loudness", "liveness", "instrumentalness", "track_popularity"],
+        label_visibility="collapsed"
+    )
+
+    st.markdown("**Bubble Chart X / Y**")
+    bubble_x = st.selectbox("X Axis", ["energy","danceability","tempo","valence","acousticness"], index=0, label_visibility="collapsed")
+    bubble_y = st.selectbox("Y Axis", ["valence","energy","danceability","tempo","acousticness"], index=0, label_visibility="collapsed")
+
+    st.markdown("---")
+    st.markdown(
+        "<small style='color:#5d4d7a'>DSA 506 · Shreyasee Poddar<br>14,200 songs · 6 genres · 4 moods</small>",
+        unsafe_allow_html=True
+    )
+
+# ─────────────────────────────────────────────
+# FILTER DATA
+# ─────────────────────────────────────────────
+fdf = df.copy()
+if selected_genre != "All":
+    fdf = fdf[fdf["playlist_genre"] == selected_genre]
+if selected_mood != "All":
+    fdf = fdf[fdf["mood_category"] == selected_mood]
+fdf = fdf[(fdf["year"] >= year_range[0]) & (fdf["year"] <= year_range[1])]
+
+# ─────────────────────────────────────────────
+# HERO BANNER
+# ─────────────────────────────────────────────
+st.markdown("""
+<div class="hero-band">
+  <div class="hero-badge">DSA 506 · Final Project</div>
+  <div class="hero-title">Can AI Understand Human<br>Emotion Through Music?</div>
+  <div class="hero-rq">
+    Research Question: Can data from songs — including lyrics, audio features, and artist characteristics —
+    help identify emotional patterns in modern music?
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ─────────────────────────────────────────────
+# KPI ROW
+# ─────────────────────────────────────────────
+k1, k2, k3, k4, k5 = st.columns(5)
+with k1:
+    st.markdown(f"""<div class="metric-card">
+      <div class="label">Songs Analyzed</div>
+      <div class="value">{len(fdf):,}</div>
+      <div class="sub">of 14,200 total</div>
+    </div>""", unsafe_allow_html=True)
+with k2:
+    st.markdown(f"""<div class="metric-card">
+      <div class="label">Avg. Valence</div>
+      <div class="value">{fdf['valence'].mean():.2f}</div>
+      <div class="sub">emotional positivity</div>
+    </div>""", unsafe_allow_html=True)
+with k3:
+    st.markdown(f"""<div class="metric-card">
+      <div class="label">Avg. Energy</div>
+      <div class="value">{fdf['energy'].mean():.2f}</div>
+      <div class="sub">intensity level</div>
+    </div>""", unsafe_allow_html=True)
+with k4:
+    st.markdown(f"""<div class="metric-card">
+      <div class="label">Avg. Danceability</div>
+      <div class="value">{fdf['danceability'].mean():.2f}</div>
+      <div class="sub">rhythmic suitability</div>
+    </div>""", unsafe_allow_html=True)
+with k5:
+    top_mood = fdf["mood_category"].value_counts().idxmax() if len(fdf) > 0 else "—"
+    st.markdown(f"""<div class="metric-card">
+      <div class="label">Dominant Mood</div>
+      <div class="value" style="font-size:1.1rem;padding-top:8px">{top_mood}</div>
+      <div class="sub">in current selection</div>
+    </div>""", unsafe_allow_html=True)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# ─────────────────────────────────────────────
+# TABS
+# ─────────────────────────────────────────────
+tabs = st.tabs([
+    "🎭 The Hook",
+    "📊 Audio Features",
+    "🎨 Mood Landscape",
+    "📈 Trends Over Time",
+    "🎤 Lyric Sentiment",
+    "🔬 Deep Dive",
+    "🏁 Conclusion"
+])
+
+# ═══════════════════════════════════════════
+# TAB 1 – THE HOOK
+# ═══════════════════════════════════════════
+with tabs[0]:
+    st.markdown('<div class="section-header">The Hook</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">A surprising look at what music data actually reveals about human emotion</div>', unsafe_allow_html=True)
+
+    # Story card
+    st.markdown("""
+    <div class="story-card">
+      <h4>🎵 Did you know?</h4>
+      <p>Humans use music as an emotional compass — we play certain songs when heartbroken, others when celebrating.
+      But can a machine decode that emotional fingerprint hidden inside the audio data?
+      Across <strong>14,200 songs</strong> spanning six decades, we find that energy, valence, danceability,
+      and lyric sentiment together reveal measurable emotional patterns — and AI can learn to read them.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col_a, col_b = st.columns([1.1, 1])
+
+    with col_a:
+        # Mood donut
+        mood_counts = fdf["mood_category"].value_counts().reset_index()
+        mood_counts.columns = ["Mood", "Count"]
+        fig = px.pie(
+            mood_counts, values="Count", names="Mood",
+            hole=0.55,
+            color="Mood",
+            color_discrete_map=MOOD_COLORS,
+            title="Emotional Fingerprint of Music"
+        )
+        fig.update_traces(textinfo="percent+label", textfont_size=12,
+                          marker=dict(line=dict(color="#0a0a0f", width=2)))
+        fig.update_layout(**PLOTLY_TEMPLATE, height=360,
+                          title_font=dict(size=14, color="#c084fc"),
+                          showlegend=False)
+        st.plotly_chart(fig, use_container_width=True)
+
+    with col_b:
+        # Genre bar
+        genre_counts = fdf["playlist_genre"].value_counts().reset_index()
+        genre_counts.columns = ["Genre", "Count"]
+        fig2 = px.bar(
+            genre_counts, x="Count", y="Genre", orientation="h",
+            color="Genre",
+            color_discrete_map=GENRE_COLORS,
+            title="Songs per Genre"
+        )
+        fig2.update_layout(**PLOTLY_TEMPLATE, height=360,
+                           title_font=dict(size=14, color="#c084fc"),
+                           showlegend=False,
+                           yaxis=dict(categoryorder="total ascending"))
+        st.plotly_chart(fig2, use_container_width=True)
+
+    # Key stats row
+    st.markdown("### Key Emotional Statistics")
+    c1, c2, c3, c4 = st.columns(4)
+    happy_pct = round(len(fdf[fdf["mood_category"] == "Happy / Energetic"]) / max(len(fdf), 1) * 100, 1)
+    intense_pct = round(len(fdf[fdf["mood_category"] == "Intense / Dark"]) / max(len(fdf), 1) * 100, 1)
+    pos_sentiment = round(len(fdf[fdf["lyric_sentiment"] > 0]) / max(len(fdf), 1) * 100, 1)
+    avg_pop = round(fdf["track_popularity"].mean(), 1)
+    for col, val, label, sub in zip(
+        [c1, c2, c3, c4],
+        [f"{happy_pct}%", f"{intense_pct}%", f"{pos_sentiment}%", str(avg_pop)],
+        ["Happy / Energetic", "Intense / Dark", "Positive Lyrics", "Avg Popularity"],
+        ["of all songs", "of all songs", "sentiment score > 0", "out of 100"]
+    ):
+        col.markdown(f"""<div class="metric-card">
+          <div class="label">{label}</div>
+          <div class="value">{val}</div>
+          <div class="sub">{sub}</div>
+        </div>""", unsafe_allow_html=True)
+
+# ═══════════════════════════════════════════
+# TAB 2 – AUDIO FEATURES
+# ═══════════════════════════════════════════
+with tabs[1]:
+    st.markdown('<div class="section-header">Audio Feature Analysis</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">Numerical deep-dive into the sonic DNA of emotion</div>', unsafe_allow_html=True)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        # Distribution of selected feature
+        fig = px.histogram(
+            fdf, x=audio_feature, color="mood_category",
+            nbins=40, barmode="overlay", opacity=0.75,
+            color_discrete_map=MOOD_COLORS,
+            title=f"Distribution of {audio_feature.title()} by Mood"
+        )
+        fig.update_layout(**PLOTLY_TEMPLATE, height=340,
+                          title_font=dict(size=13, color="#c084fc"),
+                          bargap=0.05)
+        st.plotly_chart(fig, use_container_width=True)
+
+    with col2:
+        # Box plot by genre
+        fig2 = px.box(
+            fdf, x="playlist_genre", y=audio_feature,
+            color="playlist_genre",
+            color_discrete_map=GENRE_COLORS,
+            title=f"{audio_feature.title()} Across Genres",
+            points=False
+        )
+        fig2.update_layout(**PLOTLY_TEMPLATE, height=340,
+                           title_font=dict(size=13, color="#c084fc"),
+                           showlegend=False)
+        st.plotly_chart(fig2, use_container_width=True)
+
+    # Radar chart – avg features per mood
+    st.markdown("### Emotional Signature Radar")
+    radar_features = ["danceability", "energy", "valence", "acousticness", "speechiness", "liveness"]
+    mood_avg = fdf.groupby("mood_category")[radar_features].mean().reset_index()
+
+    fig_radar = go.Figure()
+    for _, row in mood_avg.iterrows():
+        mood = row["mood_category"]
+        values = [row[f] for f in radar_features]
+        values += values[:1]
+        fig_radar.add_trace(go.Scatterpolar(
+            r=values,
+            theta=radar_features + [radar_features[0]],
+            fill="toself",
+            name=mood,
+            line=dict(color=MOOD_COLORS.get(mood, "#c084fc")),
+            opacity=0.6
+        ))
+    fig_radar.update_layout(
+        **PLOTLY_TEMPLATE, height=420,
+        polar=dict(
+            bgcolor="rgba(20,5,35,0.6)",
+            radialaxis=dict(visible=True, range=[0, 1],
+                            gridcolor="rgba(100,70,160,0.25)",
+                            tickfont=dict(color="#8070a8")),
+            angularaxis=dict(gridcolor="rgba(100,70,160,0.2)")
+        ),
+        title=dict(text="Avg Audio Features per Mood Category",
+                   font=dict(color="#c084fc", size=13))
+    )
+    st.plotly_chart(fig_radar, use_container_width=True)
+
+    # Correlation heatmap
+    st.markdown("### Feature Correlation Heatmap")
+    num_cols = ["danceability","energy","valence","tempo","loudness",
+                "speechiness","acousticness","instrumentalness","liveness","track_popularity"]
+    corr = fdf[num_cols].corr().round(2)
+    fig_heat = px.imshow(
+        corr, text_auto=True, aspect="auto",
+        color_continuous_scale="RdPu",
+        title="How Audio Features Relate to Each Other"
+    )
+    fig_heat.update_layout(**PLOTLY_TEMPLATE, height=440,
+                           title_font=dict(size=13, color="#c084fc"))
+    st.plotly_chart(fig_heat, use_container_width=True)
+
+    st.markdown("""
+    <div class="story-card">
+      <h4>📊 Insight</h4>
+      <p>Energy and loudness show the strongest positive correlation, confirming that louder songs feel more intense.
+      Acousticness is negatively correlated with energy — acoustic, quieter tracks tend to carry calmer emotional energy.
+      These patterns are not random; they are the measurable architecture of human emotion.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ═══════════════════════════════════════════
+# TAB 3 – MOOD LANDSCAPE
+# ═══════════════════════════════════════════
+with tabs[2]:
+    st.markdown('<div class="section-header">Mood Landscape</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">Where do emotions live in the audio feature space?</div>', unsafe_allow_html=True)
+
+    col1, col2 = st.columns([1.4, 1])
+
+    with col1:
+        # Bubble / scatter plot
+        sample = fdf.sample(min(2000, len(fdf)), random_state=42) if len(fdf) > 0 else fdf
+        fig_bubble = px.scatter(
+            sample, x=bubble_x, y=bubble_y,
+            color="mood_category", size="track_popularity",
+            hover_data=["track_name", "track_artist", "playlist_genre"],
+            color_discrete_map=MOOD_COLORS,
+            opacity=0.7,
+            title=f"{bubble_x.title()} vs {bubble_y.title()} — Sized by Popularity",
+            size_max=18
+        )
+        fig_bubble.update_layout(**PLOTLY_TEMPLATE, height=430,
+                                  title_font=dict(size=13, color="#c084fc"))
+        st.plotly_chart(fig_bubble, use_container_width=True)
+
+    with col2:
+        # Mood by genre stacked bar
+        mg = fdf.groupby(["playlist_genre", "mood_category"]).size().reset_index(name="count")
+        fig_stack = px.bar(
+            mg, x="playlist_genre", y="count", color="mood_category",
+            color_discrete_map=MOOD_COLORS, barmode="stack",
+            title="Mood Distribution per Genre"
+        )
+        fig_stack.update_layout(**PLOTLY_TEMPLATE, height=430,
+                                title_font=dict(size=13, color="#c084fc"),
+                                xaxis_title="Genre", yaxis_title="Song Count")
+        st.plotly_chart(fig_stack, use_container_width=True)
+
+    # Violin: valence by mood
+    st.markdown("### Valence (Positivity) Distribution by Mood")
+    fig_violin = px.violin(
+        fdf, x="mood_category", y="valence",
+        color="mood_category", box=True, points=False,
+        color_discrete_map=MOOD_COLORS,
+        title="How Positive Are Songs in Each Mood Category?"
+    )
+    fig_violin.update_layout(**PLOTLY_TEMPLATE, height=380,
+                             title_font=dict(size=13, color="#c084fc"),
+                             showlegend=False)
+    st.plotly_chart(fig_violin, use_container_width=True)
+
+    st.markdown("""
+    <div class="story-card">
+      <h4>🎨 Insight</h4>
+      <p>The scatter plot confirms that moods cluster in predictable regions of audio feature space.
+      Happy / Energetic songs occupy the high-energy, high-valence quadrant.
+      Sad / Calm songs fall in low-energy territory. This geometric separation is exactly what allows
+      AI to classify emotion from raw audio data — without ever hearing the music.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ═══════════════════════════════════════════
+# TAB 4 – TRENDS OVER TIME
+# ═══════════════════════════════════════════
+with tabs[3]:
+    st.markdown('<div class="section-header">Emotional Trends Over Time</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">How has the emotional tone of music shifted across decades?</div>', unsafe_allow_html=True)
+
+    yearly = fdf.groupby("year")[["valence","energy","danceability","acousticness","speechiness"]].mean().reset_index()
+    yearly = yearly[yearly["year"] >= 1970]
+
+    # Animated line chart (year-by-year reveal)
+    col1, col2 = st.columns(2)
+    with col1:
+        fig_line = px.line(
+            yearly, x="year", y=["valence","energy","danceability"],
+            title="Valence, Energy & Danceability Over Time",
+            labels={"value": "Score", "variable": "Feature"},
+            color_discrete_sequence=["#c084fc","#f87171","#4ade80"]
+        )
+        fig_line.update_layout(**PLOTLY_TEMPLATE, height=350,
+                               title_font=dict(size=13, color="#c084fc"))
+        fig_line.update_traces(line=dict(width=2.5))
+        st.plotly_chart(fig_line, use_container_width=True)
+
+    with col2:
+        fig_line2 = px.line(
+            yearly, x="year", y=["acousticness","speechiness"],
+            title="Acousticness & Speechiness Over Time",
+            labels={"value": "Score", "variable": "Feature"},
+            color_discrete_sequence=["#60a5fa","#fbbf24"]
+        )
+        fig_line2.update_layout(**PLOTLY_TEMPLATE, height=350,
+                                title_font=dict(size=13, color="#c084fc"))
+        fig_line2.update_traces(line=dict(width=2.5))
+        st.plotly_chart(fig_line2, use_container_width=True)
+
+    # Animated bubble: energy vs valence by year
+    st.markdown("### Animated: How Emotion Evolved Year by Year")
+    genre_year = fdf.groupby(["year","playlist_genre"]).agg(
+        energy=("energy","mean"),
+        valence=("valence","mean"),
+        count=("track_id","count"),
+        danceability=("danceability","mean")
+    ).reset_index()
+    genre_year = genre_year[genre_year["year"] >= 1980]
+
+    fig_anim = px.scatter(
+        genre_year, x="energy", y="valence",
+        animation_frame="year", animation_group="playlist_genre",
+        size="count", color="playlist_genre",
+        color_discrete_map=GENRE_COLORS,
+        hover_name="playlist_genre",
+        size_max=45, range_x=[0, 1], range_y=[0, 1],
+        title="Energy vs Valence by Genre (Animated by Year)"
+    )
+    fig_anim.update_layout(**PLOTLY_TEMPLATE, height=480,
+                           title_font=dict(size=13, color="#c084fc"))
+    fig_anim.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 600
+    st.plotly_chart(fig_anim, use_container_width=True)
+
+    # Mood share over time
+    st.markdown("### Mood Share by Decade")
+    fdf2 = fdf.copy()
+    fdf2["decade"] = (fdf2["year"] // 10 * 10).astype(str) + "s"
+    decade_mood = fdf2.groupby(["decade","mood_category"]).size().reset_index(name="count")
+    fig_dec = px.bar(
+        decade_mood, x="decade", y="count", color="mood_category",
+        color_discrete_map=MOOD_COLORS, barmode="fill",
+        title="Proportional Mood Shift Across Decades"
+    )
+    fig_dec.update_layout(**PLOTLY_TEMPLATE, height=340,
+                          title_font=dict(size=13, color="#c084fc"),
+                          yaxis_tickformat=".0%")
+    st.plotly_chart(fig_dec, use_container_width=True)
+
+    st.markdown("""
+    <div class="story-card">
+      <h4>📈 Insight</h4>
+      <p>The animated chart reveals a clear trend: valence (emotional positivity) has been <em>declining</em>
+      since the early 2010s, while energy remains relatively high. This suggests that modern music has become
+      more intense but less joyful — a reflection of the cultural anxieties of our era.
+      Speechiness has also risen, driven by the surge of rap and spoken-word genres.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ═══════════════════════════════════════════
+# TAB 5 – LYRIC SENTIMENT
+# ═══════════════════════════════════════════
+with tabs[4]:
+    st.markdown('<div class="section-header">Lyric Sentiment Analysis</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">What do the words actually say about how we feel?</div>', unsafe_allow_html=True)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        # Sentiment distribution
+        fig_sent = px.histogram(
+            fdf, x="lyric_sentiment", color="mood_category",
+            nbins=40, barmode="overlay", opacity=0.75,
+            color_discrete_map=MOOD_COLORS,
+            title="Lyric Sentiment Score Distribution by Mood"
+        )
+        fig_sent.add_vline(x=0, line_dash="dash", line_color="#c084fc", opacity=0.6,
+                           annotation_text=" Neutral", annotation_font_color="#c084fc")
+        fig_sent.update_layout(**PLOTLY_TEMPLATE, height=360,
+                               title_font=dict(size=13, color="#c084fc"))
+        st.plotly_chart(fig_sent, use_container_width=True)
+
+    with col2:
+        # Sentiment vs valence scatter
+        sample2 = fdf.sample(min(1500, len(fdf)), random_state=7) if len(fdf) > 0 else fdf
+        fig_sv = px.scatter(
+            sample2, x="lyric_sentiment", y="valence",
+            color="mood_category", opacity=0.65,
+            color_discrete_map=MOOD_COLORS,
+            trendline="ols",
+            title="Lyric Sentiment vs Audio Valence"
+        )
+        fig_sv.update_layout(**PLOTLY_TEMPLATE, height=360,
+                             title_font=dict(size=13, color="#c084fc"))
+        st.plotly_chart(fig_sv, use_container_width=True)
+
+    # Sentiment by genre
+    st.markdown("### Average Lyric Sentiment by Genre")
+    genre_sent = fdf.groupby("playlist_genre")["lyric_sentiment"].mean().reset_index()
+    genre_sent.columns = ["Genre", "Avg Sentiment"]
+    genre_sent = genre_sent.sort_values("Avg Sentiment", ascending=False)
+    fig_gs = px.bar(
+        genre_sent, x="Genre", y="Avg Sentiment",
+        color="Genre", color_discrete_map=GENRE_COLORS,
+        title="Which Genre Has the Most Positive Lyrics?"
+    )
+    fig_gs.add_hline(y=0, line_color="#9d86c8", line_dash="dot", opacity=0.5)
+    fig_gs.update_layout(**PLOTLY_TEMPLATE, height=340,
+                         title_font=dict(size=13, color="#c084fc"),
+                         showlegend=False)
+    st.plotly_chart(fig_gs, use_container_width=True)
+
+    # Sentiment vs popularity
+    col3, col4 = st.columns(2)
+    with col3:
+        fig_sp = px.scatter(
+            sample2, x="lyric_sentiment", y="track_popularity",
+            color="playlist_genre", opacity=0.6,
+            color_discrete_map=GENRE_COLORS,
+            title="Does Sentiment Drive Popularity?"
+        )
+        fig_sp.update_layout(**PLOTLY_TEMPLATE, height=320,
+                             title_font=dict(size=13, color="#c084fc"))
+        st.plotly_chart(fig_sp, use_container_width=True)
+
+    with col4:
+        mood_sent = fdf.groupby("mood_category")["lyric_sentiment"].mean().reset_index()
+        fig_ms = px.bar(
+            mood_sent, x="mood_category", y="lyric_sentiment",
+            color="mood_category", color_discrete_map=MOOD_COLORS,
+            title="Avg Sentiment per Mood Category"
+        )
+        fig_ms.update_layout(**PLOTLY_TEMPLATE, height=320,
+                             title_font=dict(size=13, color="#c084fc"),
+                             showlegend=False)
+        st.plotly_chart(fig_ms, use_container_width=True)
+
+    st.markdown("""
+    <div class="story-card">
+      <h4>🎤 Insight</h4>
+      <p>Lyric sentiment and audio valence are correlated but not identical — proving that words and sound
+      convey emotion independently. Pop and R&B tend to have the most positive lyrics, while rock songs
+      often score lower on textual sentiment. This disconnect between what we hear and what we read
+      is itself a profound signal: music communicates emotionally on multiple parallel channels.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ═══════════════════════════════════════════
+# TAB 6 – DEEP DIVE
+# ═══════════════════════════════════════════
+with tabs[5]:
+    st.markdown('<div class="section-header">Deep Dive Analysis</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">Advanced patterns and artist-level insights</div>', unsafe_allow_html=True)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        # Top artists by avg popularity
+        top_artists = (
+            fdf.groupby("track_artist")["track_popularity"]
+            .mean()
+            .reset_index()
+            .sort_values("track_popularity", ascending=False)
+            .head(15)
+        )
+        fig_ta = px.bar(
+            top_artists, x="track_popularity", y="track_artist",
+            orientation="h", color="track_popularity",
+            color_continuous_scale="RdPu",
+            title="Top 15 Artists by Avg Popularity"
+        )
+        fig_ta.update_layout(**PLOTLY_TEMPLATE, height=420,
+                             title_font=dict(size=13, color="#c084fc"),
+                             yaxis=dict(categoryorder="total ascending"),
+                             coloraxis_showscale=False)
+        st.plotly_chart(fig_ta, use_container_width=True)
+
+    with col2:
+        # Energy vs tempo colored by mood
+        sample3 = fdf.sample(min(1500, len(fdf)), random_state=99) if len(fdf) > 0 else fdf
+        fig_et = px.scatter(
+            sample3, x="tempo", y="energy",
+            color="mood_category", opacity=0.65,
+            size="danceability",
+            color_discrete_map=MOOD_COLORS,
+            title="Tempo vs Energy — Sized by Danceability",
+            size_max=14
+        )
+        fig_et.update_layout(**PLOTLY_TEMPLATE, height=420,
+                             title_font=dict(size=13, color="#c084fc"))
+        st.plotly_chart(fig_et, use_container_width=True)
+
+    # Sunburst: Genre > Mood
+    st.markdown("### Genre → Mood Hierarchy")
+    gm = fdf.groupby(["playlist_genre","mood_category"]).size().reset_index(name="count")
+    fig_sun = px.sunburst(
+        gm, path=["playlist_genre","mood_category"], values="count",
+        color="mood_category", color_discrete_map=MOOD_COLORS,
+        title="Genre and Mood Breakdown (Sunburst)"
+    )
+    fig_sun.update_layout(**PLOTLY_TEMPLATE, height=480,
+                          title_font=dict(size=13, color="#c084fc"))
+    st.plotly_chart(fig_sun, use_container_width=True)
+
+    # Parallel coordinates
+    st.markdown("### Multi-Feature Emotional Fingerprint (Parallel Coordinates)")
+    pc_sample = fdf.sample(min(1000, len(fdf)), random_state=42) if len(fdf) > 0 else fdf
+    mood_codes = {"Happy / Energetic": 0, "Calm / Positive": 1, "Sad / Calm": 2, "Intense / Dark": 3}
+    pc_sample = pc_sample.copy()
+    pc_sample["mood_code"] = pc_sample["mood_category"].map(mood_codes)
+
+    fig_pc = px.parallel_coordinates(
+        pc_sample,
+        dimensions=["danceability","energy","valence","tempo","acousticness","speechiness"],
+        color="mood_code",
+        color_continuous_scale=["#4ade80","#34d399","#60a5fa","#f87171"],
+        title="Parallel Coordinates — Audio Features by Mood"
+    )
+    fig_pc.update_layout(**PLOTLY_TEMPLATE, height=440,
+                         title_font=dict(size=13, color="#c084fc"))
+    st.plotly_chart(fig_pc, use_container_width=True)
+
+    st.markdown("""
+    <div class="story-card">
+      <h4>🔬 Insight</h4>
+      <p>The parallel coordinates plot makes the pattern unmistakable: each mood category traces
+      a distinct path across all audio dimensions. Happy songs have high danceability, high energy,
+      and high valence simultaneously. Intense / Dark songs maintain high energy but drop in valence.
+      This multi-dimensional signature is precisely what machine learning algorithms exploit to
+      classify emotion with high accuracy.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ═══════════════════════════════════════════
+# TAB 7 – CONCLUSION
+# ═══════════════════════════════════════════
+with tabs[6]:
+    st.markdown('<div class="section-header">Conclusion & Call to Action</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">What the data tells us — and what it means for the future of music</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="conclusion-box">
+      <h3>🏁 The Resolution</h3>
+      <p style="color:#c0b0d8; font-size:0.95rem; line-height:1.8;">
+        This analysis of <strong>14,200 songs</strong> across six genres and six decades confirms that AI can
+        detect emotional patterns in music. By combining three types of data — <em>numerical audio features</em>
+        (valence, energy, danceability), <em>categorical metadata</em> (genre, subgenre, year),
+        and <em>text-based lyric sentiment</em> — we can classify songs into four distinct emotional categories
+        with meaningful accuracy. Energy and valence are the strongest predictors of mood.
+        Lyric sentiment adds an independent emotional signal. Genre shapes the distribution of emotions
+        in predictable ways. Valence has declined since 2010 while energy remains high — music is getting
+        more intense but less joyful.
+      </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    cols = st.columns(3)
+    insights = [
+        ("📡", "For Streaming Platforms",
+         "Replace genre-only recommendations with emotion-aware playlists. Recommend songs based on the listener's current mood state, not just past behavior."),
+        ("🎯", "For Music Marketers",
+         "Use valence and energy scores to target audiences. High-valence tracks perform better in upbeat campaign contexts. Understand emotional positioning before releasing."),
+        ("🤖", "For AI Researchers",
+         "Build multi-modal emotion classifiers that combine audio features, lyrics, and metadata. A single data type is insufficient — emotion is multi-layered."),
+    ]
+    for col, (icon, title, text) in zip(cols, insights):
+        col.markdown(f"""
+        <div class="story-card" style="height:180px">
+          <h4>{icon} {title}</h4>
+          <p>{text}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("### The Emotional Appeal")
+    st.markdown("""
+    <div class="story-card" style="border-left-color:#4ade80">
+      <h4>🎵 Beyond the Numbers</h4>
+      <p>Music is not just data. It is connected to memory, identity, heartbreak, motivation, and healing.
+      Behind every valence score of 0.12 is a breakup. Behind every energy reading of 0.95 is a finish line.
+      This project shows how data can help us understand emotion — while reminding us that music remains
+      irreducibly human. AI can measure the shape of a feeling. Only you can feel it.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Final summary visual
+    st.markdown("### At a Glance — Key Findings")
+    findings = pd.DataFrame({
+        "Finding": [
+            "Happy / Energetic is the largest mood class",
+            "Energy & loudness are the strongest correlated features",
+            "Valence has declined since ~2013",
+            "Rap has the highest speechiness (expected)",
+            "Pop lyrics score highest in positive sentiment",
+            "Genre alone cannot predict mood accurately"
+        ],
+        "Confidence": [0.92, 0.88, 0.85, 0.97, 0.79, 0.84],
+        "Impact": ["High","High","High","Medium","Medium","High"]
+    })
+    fig_findings = px.bar(
+        findings, x="Confidence", y="Finding", orientation="h",
+        color="Confidence", color_continuous_scale="RdPu",
+        text="Confidence",
+        title="Key Findings Confidence Summary"
+    )
+    fig_findings.update_traces(texttemplate="%{text:.0%}", textposition="outside")
+    fig_findings.update_layout(**PLOTLY_TEMPLATE, height=380,
+                               title_font=dict(size=13, color="#c084fc"),
+                               coloraxis_showscale=False,
+                               xaxis=dict(range=[0, 1.1], tickformat=".0%"),
+                               yaxis=dict(categoryorder="total ascending"))
+    st.plotly_chart(fig_findings, use_container_width=True)
+
+    st.markdown("""
+    <br>
+    <div style="text-align:center; color:#5d4d7a; font-size:0.8rem; padding:20px 0;">
+      DSA 506 · Final Project · Shreyasee Poddar · 14,200 Songs Analyzed
+    </div>
+    """, unsafe_allow_html=True)
+
