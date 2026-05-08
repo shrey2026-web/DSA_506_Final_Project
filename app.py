@@ -695,13 +695,25 @@ with tabs[3]:
 
         bubble_anim = pd.concat(bubble_frames, ignore_index=True)
 
+        # Keep cumulative storytelling but prevent bubbles from becoming too large.
+        # New/empty groups stay almost invisible until they appear in the data.
+        max_count = bubble_anim["count"].max()
+        if max_count > 0:
+            bubble_anim["scaled_size"] = np.where(
+                bubble_anim["count"] > 0,
+                5 + 35 * np.sqrt(bubble_anim["count"] / max_count),
+                0.05
+            )
+        else:
+            bubble_anim["scaled_size"] = 0.05
+
         fig_anim = px.scatter(
             bubble_anim,
             x="energy",
             y="valence",
             animation_frame="frame_year",
             animation_group="genre_mood",
-            size="count_for_size",
+            size="scaled_size",
             color="mood_category",
             symbol="playlist_genre",
             color_discrete_map=MOOD_COLORS,
@@ -714,11 +726,12 @@ with tabs[3]:
                 "popularity": ":.1f",
                 "energy": ":.3f",
                 "valence": ":.3f",
+                "scaled_size": False,
                 "count_for_size": False,
                 "genre_mood": False,
                 "frame_year": False
             },
-            size_max=55,
+            size_max=42,
             range_x=[0, 1],
             range_y=[0, 1],
             title="Energy vs Valence by Genre and Mood (Cumulative Animation by Year)"
