@@ -243,14 +243,15 @@ PLOTLY_TEMPLATE = dict(
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(20,5,35,0.6)",
     font=dict(family="DM Sans", color="#d0c8e8", size=12),
-    xaxis=dict(gridcolor="rgba(100,70,160,0.15)", linecolor="rgba(100,70,160,0.3)"),
-    yaxis=dict(gridcolor="rgba(100,70,160,0.15)", linecolor="rgba(100,70,160,0.3)"),
     colorway=["#c084fc","#f87171","#4ade80","#60a5fa","#fbbf24","#34d399"],
     legend=dict(bgcolor="rgba(20,5,35,0.8)", bordercolor="#3d1a6e", borderwidth=1),
 )
 
-def apply_template(fig):
-    fig.update_layout(**PLOTLY_TEMPLATE)
+AXIS_STYLE = dict(gridcolor="rgba(100,70,160,0.15)", linecolor="rgba(100,70,160,0.3)")
+
+def apply_axes(fig):
+    fig.update_xaxes(**AXIS_STYLE)
+    fig.update_yaxes(**AXIS_STYLE)
     return fig
 
 # ─────────────────────────────────────────────
@@ -401,6 +402,8 @@ with tabs[0]:
         fig.update_layout(**PLOTLY_TEMPLATE, height=360,
                           title_font=dict(size=14, color="#c084fc"),
                           showlegend=False)
+        fig.update_xaxes(**AXIS_STYLE)
+        fig.update_yaxes(**AXIS_STYLE)
         st.plotly_chart(fig, use_container_width=True)
 
     with col_b:
@@ -415,8 +418,9 @@ with tabs[0]:
         )
         fig2.update_layout(**PLOTLY_TEMPLATE, height=360,
                            title_font=dict(size=14, color="#c084fc"),
-                           showlegend=False,
-                           yaxis=dict(categoryorder="total ascending"))
+                           showlegend=False)
+        fig2.update_xaxes(**AXIS_STYLE)
+        fig2.update_yaxes(categoryorder="total ascending", **AXIS_STYLE)
         st.plotly_chart(fig2, use_container_width=True)
 
     # Key stats row
@@ -458,6 +462,8 @@ with tabs[1]:
         fig.update_layout(**PLOTLY_TEMPLATE, height=340,
                           title_font=dict(size=13, color="#c084fc"),
                           bargap=0.05)
+        fig.update_xaxes(**AXIS_STYLE)
+        fig.update_yaxes(**AXIS_STYLE)
         st.plotly_chart(fig, use_container_width=True)
 
     with col2:
@@ -472,6 +478,8 @@ with tabs[1]:
         fig2.update_layout(**PLOTLY_TEMPLATE, height=340,
                            title_font=dict(size=13, color="#c084fc"),
                            showlegend=False)
+        fig2.update_xaxes(**AXIS_STYLE)
+        fig2.update_yaxes(**AXIS_STYLE)
         st.plotly_chart(fig2, use_container_width=True)
 
     # Radar chart – avg features per mood
@@ -518,6 +526,8 @@ with tabs[1]:
     )
     fig_heat.update_layout(**PLOTLY_TEMPLATE, height=440,
                            title_font=dict(size=13, color="#c084fc"))
+    fig_heat.update_xaxes(**AXIS_STYLE)
+    fig_heat.update_yaxes(**AXIS_STYLE)
     st.plotly_chart(fig_heat, use_container_width=True)
 
     st.markdown("""
@@ -552,6 +562,8 @@ with tabs[2]:
         )
         fig_bubble.update_layout(**PLOTLY_TEMPLATE, height=430,
                                   title_font=dict(size=13, color="#c084fc"))
+        fig_bubble.update_xaxes(**AXIS_STYLE)
+        fig_bubble.update_yaxes(**AXIS_STYLE)
         st.plotly_chart(fig_bubble, use_container_width=True)
 
     with col2:
@@ -565,6 +577,8 @@ with tabs[2]:
         fig_stack.update_layout(**PLOTLY_TEMPLATE, height=430,
                                 title_font=dict(size=13, color="#c084fc"),
                                 xaxis_title="Genre", yaxis_title="Song Count")
+        fig_stack.update_xaxes(**AXIS_STYLE)
+        fig_stack.update_yaxes(**AXIS_STYLE)
         st.plotly_chart(fig_stack, use_container_width=True)
 
     # Violin: valence by mood
@@ -578,6 +592,8 @@ with tabs[2]:
     fig_violin.update_layout(**PLOTLY_TEMPLATE, height=380,
                              title_font=dict(size=13, color="#c084fc"),
                              showlegend=False)
+    fig_violin.update_xaxes(**AXIS_STYLE)
+    fig_violin.update_yaxes(**AXIS_STYLE)
     st.plotly_chart(fig_violin, use_container_width=True)
 
     st.markdown("""
@@ -611,6 +627,8 @@ with tabs[3]:
         )
         fig_line.update_layout(**PLOTLY_TEMPLATE, height=350,
                                title_font=dict(size=13, color="#c084fc"))
+        fig_line.update_xaxes(**AXIS_STYLE)
+        fig_line.update_yaxes(**AXIS_STYLE)
         fig_line.update_traces(line=dict(width=2.5))
         st.plotly_chart(fig_line, use_container_width=True)
 
@@ -623,6 +641,8 @@ with tabs[3]:
         )
         fig_line2.update_layout(**PLOTLY_TEMPLATE, height=350,
                                 title_font=dict(size=13, color="#c084fc"))
+        fig_line2.update_xaxes(**AXIS_STYLE)
+        fig_line2.update_yaxes(**AXIS_STYLE)
         fig_line2.update_traces(line=dict(width=2.5))
         st.plotly_chart(fig_line2, use_container_width=True)
 
@@ -647,6 +667,8 @@ with tabs[3]:
     )
     fig_anim.update_layout(**PLOTLY_TEMPLATE, height=480,
                            title_font=dict(size=13, color="#c084fc"))
+    fig_anim.update_xaxes(**AXIS_STYLE)
+    fig_anim.update_yaxes(**AXIS_STYLE)
     fig_anim.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 600
     st.plotly_chart(fig_anim, use_container_width=True)
 
@@ -663,6 +685,8 @@ with tabs[3]:
     fig_dec.update_layout(**PLOTLY_TEMPLATE, height=340,
                           title_font=dict(size=13, color="#c084fc"),
                           yaxis_tickformat=".0%")
+    fig_dec.update_xaxes(**AXIS_STYLE)
+    fig_dec.update_yaxes(**AXIS_STYLE)
     st.plotly_chart(fig_dec, use_container_width=True)
 
     st.markdown("""
@@ -696,6 +720,8 @@ with tabs[4]:
                            annotation_text=" Neutral", annotation_font_color="#c084fc")
         fig_sent.update_layout(**PLOTLY_TEMPLATE, height=360,
                                title_font=dict(size=13, color="#c084fc"))
+        fig_sent.update_xaxes(**AXIS_STYLE)
+        fig_sent.update_yaxes(**AXIS_STYLE)
         st.plotly_chart(fig_sent, use_container_width=True)
 
     with col2:
@@ -710,6 +736,8 @@ with tabs[4]:
         )
         fig_sv.update_layout(**PLOTLY_TEMPLATE, height=360,
                              title_font=dict(size=13, color="#c084fc"))
+        fig_sv.update_xaxes(**AXIS_STYLE)
+        fig_sv.update_yaxes(**AXIS_STYLE)
         st.plotly_chart(fig_sv, use_container_width=True)
 
     # Sentiment by genre
@@ -726,6 +754,8 @@ with tabs[4]:
     fig_gs.update_layout(**PLOTLY_TEMPLATE, height=340,
                          title_font=dict(size=13, color="#c084fc"),
                          showlegend=False)
+    fig_gs.update_xaxes(**AXIS_STYLE)
+    fig_gs.update_yaxes(**AXIS_STYLE)
     st.plotly_chart(fig_gs, use_container_width=True)
 
     # Sentiment vs popularity
@@ -739,6 +769,8 @@ with tabs[4]:
         )
         fig_sp.update_layout(**PLOTLY_TEMPLATE, height=320,
                              title_font=dict(size=13, color="#c084fc"))
+        fig_sp.update_xaxes(**AXIS_STYLE)
+        fig_sp.update_yaxes(**AXIS_STYLE)
         st.plotly_chart(fig_sp, use_container_width=True)
 
     with col4:
@@ -751,6 +783,8 @@ with tabs[4]:
         fig_ms.update_layout(**PLOTLY_TEMPLATE, height=320,
                              title_font=dict(size=13, color="#c084fc"),
                              showlegend=False)
+        fig_ms.update_xaxes(**AXIS_STYLE)
+        fig_ms.update_yaxes(**AXIS_STYLE)
         st.plotly_chart(fig_ms, use_container_width=True)
 
     st.markdown("""
@@ -789,8 +823,9 @@ with tabs[5]:
         )
         fig_ta.update_layout(**PLOTLY_TEMPLATE, height=420,
                              title_font=dict(size=13, color="#c084fc"),
-                             yaxis=dict(categoryorder="total ascending"),
                              coloraxis_showscale=False)
+        fig_ta.update_xaxes(**AXIS_STYLE)
+        fig_ta.update_yaxes(categoryorder="total ascending", **AXIS_STYLE)
         st.plotly_chart(fig_ta, use_container_width=True)
 
     with col2:
@@ -806,6 +841,8 @@ with tabs[5]:
         )
         fig_et.update_layout(**PLOTLY_TEMPLATE, height=420,
                              title_font=dict(size=13, color="#c084fc"))
+        fig_et.update_xaxes(**AXIS_STYLE)
+        fig_et.update_yaxes(**AXIS_STYLE)
         st.plotly_chart(fig_et, use_container_width=True)
 
     # Sunburst: Genre > Mood
@@ -818,6 +855,8 @@ with tabs[5]:
     )
     fig_sun.update_layout(**PLOTLY_TEMPLATE, height=480,
                           title_font=dict(size=13, color="#c084fc"))
+    fig_sun.update_xaxes(**AXIS_STYLE)
+    fig_sun.update_yaxes(**AXIS_STYLE)
     st.plotly_chart(fig_sun, use_container_width=True)
 
     # Parallel coordinates
@@ -836,6 +875,8 @@ with tabs[5]:
     )
     fig_pc.update_layout(**PLOTLY_TEMPLATE, height=440,
                          title_font=dict(size=13, color="#c084fc"))
+    fig_pc.update_xaxes(**AXIS_STYLE)
+    fig_pc.update_yaxes(**AXIS_STYLE)
     st.plotly_chart(fig_pc, use_container_width=True)
 
     st.markdown("""
@@ -925,9 +966,9 @@ with tabs[6]:
     fig_findings.update_traces(texttemplate="%{text:.0%}", textposition="outside")
     fig_findings.update_layout(**PLOTLY_TEMPLATE, height=380,
                                title_font=dict(size=13, color="#c084fc"),
-                               coloraxis_showscale=False,
-                               xaxis=dict(range=[0, 1.1], tickformat=".0%"),
-                               yaxis=dict(categoryorder="total ascending"))
+                               coloraxis_showscale=False)
+    fig_findings.update_xaxes(range=[0, 1.1], tickformat=".0%", **AXIS_STYLE)
+    fig_findings.update_yaxes(categoryorder="total ascending", **AXIS_STYLE)
     st.plotly_chart(fig_findings, use_container_width=True)
 
     st.markdown("""
