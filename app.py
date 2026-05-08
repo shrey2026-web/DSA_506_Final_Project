@@ -643,56 +643,64 @@ with tabs[3]:
         st.plotly_chart(fig_line2, use_container_width=True)
 
     # Animated bubble: energy vs valence by year
-    # This version uses genre + mood combinations, which creates richer movement
-    # than one bubble per genre while keeping the chart fast enough for Streamlit.
+    # Uses cumulative frames so that early sparse years do not make the animation look empty.
+    # Each frame shows the emotional genre+mood landscape up to that year.
     st.markdown("### Animated: How Emotion Evolved Year by Year")
 
     anim_start, anim_end = int(year_range[0]), int(year_range[1])
     anim_source = df[(df["year"] >= anim_start) & (df["year"] <= anim_end)].copy()
 
-    bubble_anim = anim_source.groupby(["year", "playlist_genre", "mood_category"]).agg(
-        energy=("energy", "mean"),
-        valence=("valence", "mean"),
-        popularity=("track_popularity", "mean"),
-        count=("track_id", "count")
-    ).reset_index()
+    bubble_frames = []
+    for frame_year in sorted(anim_source["year"].dropna().unique()):
+        temp_source = anim_source[anim_source["year"] <= frame_year].copy()
+        temp_grouped = temp_source.groupby(["playlist_genre", "mood_category"]).agg(
+            energy=("energy", "mean"),
+            valence=("valence", "mean"),
+            popularity=("track_popularity", "mean"),
+            count=("track_id", "count")
+        ).reset_index()
+        temp_grouped["frame_year"] = int(frame_year)
+        temp_grouped["genre_mood"] = temp_grouped["playlist_genre"] + " - " + temp_grouped["mood_category"]
+        bubble_frames.append(temp_grouped)
 
-    bubble_anim["genre_mood"] = bubble_anim["playlist_genre"] + " - " + bubble_anim["mood_category"]
+    if bubble_frames:
+        bubble_anim = pd.concat(bubble_frames, ignore_index=True)
 
-    fig_anim = px.scatter(
-        bubble_anim,
-        x="energy",
-        y="valence",
-        animation_frame="year",
-        animation_group="genre_mood",
-        size="count",
-        color="mood_category",
-        symbol="playlist_genre",
-        color_discrete_map=MOOD_COLORS,
-        hover_name="playlist_genre",
-        hover_data={
-            "mood_category": True,
-            "count": True,
-            "popularity": ":.1f",
-            "energy": ":.3f",
-            "valence": ":.3f",
-            "genre_mood": False
-        },
-        size_max=55,
-        range_x=[0, 1],
-        range_y=[0, 1],
-        title="Energy vs Valence by Genre and Mood (Animated by Year)"
-    )
-    fig_anim.update_layout(**PLOTLY_TEMPLATE, height=520,
-                           title_font=dict(size=13, color="#f0c040"),
-                           xaxis_title="Energy",
-                           yaxis_title="Valence")
-    fig_anim.update_xaxes(**AXIS_STYLE)
-    fig_anim.update_yaxes(**AXIS_STYLE)
-    if fig_anim.layout.updatemenus:
-        fig_anim.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 700
-        fig_anim.layout.updatemenus[0].buttons[0].args[1]["transition"]["duration"] = 300
-    st.plotly_chart(fig_anim, use_container_width=True)
+        fig_anim = px.scatter(
+            bubble_anim,
+            x="energy",
+            y="valence",
+            animation_frame="frame_year",
+            animation_group="genre_mood",
+            size="count",
+            color="mood_category",
+            symbol="playlist_genre",
+            color_discrete_map=MOOD_COLORS,
+            hover_name="playlist_genre",
+            hover_data={
+                "mood_category": True,
+                "count": True,
+                "popularity": ":.1f",
+                "energy": ":.3f",
+                "valence": ":.3f",
+                "genre_mood": False,
+                "frame_year": False
+            },
+            size_max=55,
+            range_x=[0, 1],
+            range_y=[0, 1],
+            title="Energy vs Valence by Genre and Mood (Cumulative Animation by Year)"
+        )
+        fig_anim.update_layout(**PLOTLY_TEMPLATE, height=520,
+                               title_font=dict(size=13, color="#f0c040"),
+                               xaxis_title="Energy",
+                               yaxis_title="Valence")
+        fig_anim.update_xaxes(**AXIS_STYLE)
+        fig_anim.update_yaxes(**AXIS_STYLE)
+        if fig_anim.layout.updatemenus:
+            fig_anim.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 350
+            fig_anim.layout.updatemenus[0].buttons[0].args[1]["transition"]["duration"] = 100
+        st.plotly_chart(fig_anim, use_container_width=True)
 
     # Animated time-series chart, using cumulative frames so the line grows over time.
     st.markdown("### Animated Time-Series: Emotional Audio Features")
