@@ -1,4 +1,4 @@
-# DSA_506_Final_Project
+# DSA_506_Final_Project_by_Shreyasee
 # TOPIC: Can AI Understand Human Emotion Through Music?
 
 ## Research Question
