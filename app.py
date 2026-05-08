@@ -302,7 +302,7 @@ st.markdown("""
   <div class="hero-badge">DSA 506 · Final Project</div>
   <div class="hero-title">Can AI Understand Human Emotion<br>Through <span>Music?</span></div>
   <div class="hero-rq">
-    Research Question: Can data from songs — including lyrics, audio features, and artist characteristics —
+    Research Question: Can data from songs - including lyrics, audio features, and artist characteristics -
     help identify emotional patterns in modern music?
   </div>
 </div>
@@ -337,7 +337,7 @@ with k4:
       <div class="sub">rhythmic suitability</div>
     </div>""", unsafe_allow_html=True)
 with k5:
-    top_mood = fdf["mood_category"].value_counts().idxmax() if len(fdf) > 0 else "—"
+    top_mood = fdf["mood_category"].value_counts().idxmax() if len(fdf) > 0 else "-"
     st.markdown(f"""<div class="metric-card">
       <div class="label">Dominant Mood</div>
       <div class="value" style="font-size:1.1rem;padding-top:8px">{top_mood}</div>
@@ -370,10 +370,10 @@ with tabs[0]:
     st.markdown("""
     <div class="story-card">
       <h4>🎵 Did you know?</h4>
-      <p>Humans use music as an emotional compass — we play certain songs when heartbroken, others when celebrating.
+      <p>Humans use music as an emotional compass - we play certain songs when heartbroken, others when celebrating.
       But can a machine decode that emotional fingerprint hidden inside the audio data?
       Across <strong>14,200 songs</strong> spanning six decades, we find that energy, valence, danceability,
-      and lyric sentiment together reveal measurable emotional patterns — and AI can learn to read them.</p>
+      and lyric sentiment together reveal measurable emotional patterns - and AI can learn to read them.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -527,7 +527,7 @@ with tabs[1]:
     <div class="story-card">
       <h4>📊 Insight</h4>
       <p>Energy and loudness show the strongest positive correlation, confirming that louder songs feel more intense.
-      Acousticness is negatively correlated with energy — acoustic, quieter tracks tend to carry calmer emotional energy.
+      Acousticness is negatively correlated with energy - acoustic, quieter tracks tend to carry calmer emotional energy.
       These patterns are not random; they are the measurable architecture of human emotion.</p>
     </div>
     """, unsafe_allow_html=True)
@@ -550,7 +550,7 @@ with tabs[2]:
             hover_data=["track_name", "track_artist", "playlist_genre"],
             color_discrete_map=MOOD_COLORS,
             opacity=0.7,
-            title=f"{bubble_x.title()} vs {bubble_y.title()} — Sized by Popularity",
+            title=f"{bubble_x.title()} vs {bubble_y.title()} - Sized by Popularity",
             size_max=18
         )
         fig_bubble.update_layout(**PLOTLY_TEMPLATE, height=430,
@@ -595,7 +595,7 @@ with tabs[2]:
       <p>The scatter plot confirms that moods cluster in predictable regions of audio feature space.
       Happy / Energetic songs occupy the high-energy, high-valence quadrant.
       Sad / Calm songs fall in low-energy territory. This geometric separation is exactly what allows
-      AI to classify emotion from raw audio data — without ever hearing the music.</p>
+      AI to classify emotion from raw audio data - without ever hearing the music.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -746,7 +746,7 @@ with tabs[3]:
       <h4>📈 Insight</h4>
       <p>The animated chart reveals a clear trend: valence (emotional positivity) has been <em>declining</em>
       since the early 2010s, while energy remains relatively high. This suggests that modern music has become
-      more intense but less joyful — a reflection of the cultural anxieties of our era.
+      more intense but less joyful - a reflection of the cultural anxieties of our era.
       Speechiness has also risen, driven by the surge of rap and spoken-word genres.</p>
     </div>
     """, unsafe_allow_html=True)
@@ -842,7 +842,7 @@ with tabs[4]:
     st.markdown("""
     <div class="story-card">
       <h4>🎤 Insight</h4>
-      <p>Lyric sentiment and audio valence are correlated but not identical — proving that words and sound
+      <p>Lyric sentiment and audio valence are correlated but not identical - proving that words and sound
       convey emotion independently. Pop and R&B tend to have the most positive lyrics, while rock songs
       often score lower on textual sentiment. This disconnect between what we hear and what we read
       is itself a profound signal: music communicates emotionally on multiple parallel channels.</p>
@@ -888,7 +888,7 @@ with tabs[5]:
             color="mood_category", opacity=0.65,
             size="danceability",
             color_discrete_map=MOOD_COLORS,
-            title="Tempo vs Energy — Sized by Danceability",
+            title="Tempo vs Energy - Sized by Danceability",
             size_max=14
         )
         fig_et.update_layout(**PLOTLY_TEMPLATE, height=420,
@@ -923,7 +923,7 @@ with tabs[5]:
         dimensions=["danceability","energy","valence","tempo","acousticness","speechiness"],
         color="mood_code",
         color_continuous_scale=["#22c55e","#22d3ee","#3b82f6","#ef4444"],
-        title="Parallel Coordinates — Audio Features by Mood"
+        title="Parallel Coordinates - Audio Features by Mood"
     )
     fig_pc.update_layout(**PLOTLY_TEMPLATE, height=440,
                          title_font=dict(size=13, color="#f0c040"))
@@ -947,19 +947,19 @@ with tabs[5]:
 # ═══════════════════════════════════════════
 with tabs[6]:
     st.markdown('<div class="section-header">Conclusion & Call to Action</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">What the data tells us — and what it means for the future of music</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">What the data tells us - and what it means for the future of music</div>', unsafe_allow_html=True)
 
     st.markdown("""
     <div class="conclusion-box">
       <h3>🏁 The Resolution</h3>
       <p style="color:#c0b0d8; font-size:0.95rem; line-height:1.8;">
         This analysis of <strong>14,200 songs</strong> across six genres and six decades confirms that AI can
-        detect emotional patterns in music. By combining three types of data — <em>numerical audio features</em>
+        detect emotional patterns in music. By combining three types of data - <em>numerical audio features</em>
         (valence, energy, danceability), <em>categorical metadata</em> (genre, subgenre, year),
-        and <em>text-based lyric sentiment</em> — we can classify songs into four distinct emotional categories
+        and <em>text-based lyric sentiment</em> - we can classify songs into four distinct emotional categories
         with meaningful accuracy. Energy and valence are the strongest predictors of mood.
         Lyric sentiment adds an independent emotional signal. Genre shapes the distribution of emotions
-        in predictable ways. Valence has declined since 2010 while energy remains high — music is getting
+        in predictable ways. Valence has declined since 2010 while energy remains high - music is getting
         more intense but less joyful.
       </p>
     </div>
@@ -974,7 +974,7 @@ with tabs[6]:
         ("🎯", "For Music Marketers",
          "Use valence and energy scores to target audiences. High-valence tracks perform better in upbeat campaign contexts. Understand emotional positioning before releasing."),
         ("🤖", "For AI Researchers",
-         "Build multi-modal emotion classifiers that combine audio features, lyrics, and metadata. A single data type is insufficient — emotion is multi-layered."),
+         "Build multi-modal emotion classifiers that combine audio features, lyrics, and metadata. A single data type is insufficient - emotion is multi-layered."),
     ]
     for col, (icon, title, text) in zip(cols, insights):
         col.markdown(f"""
@@ -990,13 +990,13 @@ with tabs[6]:
       <h4>🎵 Beyond the Numbers</h4>
       <p>Music is not just data. It is connected to memory, identity, heartbreak, motivation, and healing.
       Behind every valence score of 0.12 is a breakup. Behind every energy reading of 0.95 is a finish line.
-      This project shows how data can help us understand emotion — while reminding us that music remains
+      This project shows how data can help us understand emotion - while reminding us that music remains
       irreducibly human. AI can measure the shape of a feeling. Only you can feel it.</p>
     </div>
     """, unsafe_allow_html=True)
 
     # Final summary visual
-    st.markdown("### At a Glance — Key Findings")
+    st.markdown("### At a Glance - Key Findings")
     findings = pd.DataFrame({
         "Finding": [
             "Happy / Energetic is the largest mood class",
@@ -1029,4 +1029,5 @@ with tabs[6]:
       DSA 506 · Final Project · Shreyasee Poddar · 14,200 Songs Analyzed
     </div>
     """, unsafe_allow_html=True)
+
 
