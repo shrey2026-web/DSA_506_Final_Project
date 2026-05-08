@@ -212,6 +212,9 @@ st.markdown("""
 @st.cache_data
 def load_data():
     df = pd.read_csv("tableau_music_emotion_dataset.csv")
+    df["year"] = pd.to_numeric(df["year"], errors="coerce")
+    df = df.dropna(subset=["year"]).copy()
+    df["year"] = df["year"].astype(int)
     return df
 
 df = load_data()
@@ -640,54 +643,68 @@ with tabs[3]:
         st.plotly_chart(fig_line2, use_container_width=True)
 
     # Animated bubble: energy vs valence by year
+    # This version uses genre + mood combinations, which creates richer movement
+    # than one bubble per genre while keeping the chart fast enough for Streamlit.
     st.markdown("### Animated: How Emotion Evolved Year by Year")
-    genre_year = fdf.groupby(["year","playlist_genre"]).agg(
-        energy=("energy","mean"),
-        valence=("valence","mean"),
-        count=("track_id","count"),
-        danceability=("danceability","mean")
-    ).reset_index()
-    genre_year = genre_year[genre_year["year"] >= 1980]
 
-    # Use the full dataset for animation so all genres appear,
-    # while still respecting the selected year range.
-    anim_source = df[(df["year"] >= year_range[0]) & (df["year"] <= year_range[1])].copy()
+    anim_start, anim_end = int(year_range[0]), int(year_range[1])
+    anim_source = df[(df["year"] >= anim_start) & (df["year"] <= anim_end)].copy()
 
-    genre_year = anim_source.groupby(["year", "playlist_genre"]).agg(
+    bubble_anim = anim_source.groupby(["year", "playlist_genre", "mood_category"]).agg(
         energy=("energy", "mean"),
         valence=("valence", "mean"),
-        count=("track_id", "count"),
-        danceability=("danceability", "mean")
+        popularity=("track_popularity", "mean"),
+        count=("track_id", "count")
     ).reset_index()
 
+    bubble_anim["genre_mood"] = bubble_anim["playlist_genre"] + " - " + bubble_anim["mood_category"]
+
     fig_anim = px.scatter(
-        genre_year, x="energy", y="valence",
-        animation_frame="year", animation_group="playlist_genre",
-        size="count", color="playlist_genre",
-        color_discrete_map=GENRE_COLORS,
+        bubble_anim,
+        x="energy",
+        y="valence",
+        animation_frame="year",
+        animation_group="genre_mood",
+        size="count",
+        color="mood_category",
+        symbol="playlist_genre",
+        color_discrete_map=MOOD_COLORS,
         hover_name="playlist_genre",
-        size_max=45, range_x=[0, 1], range_y=[0, 1],
-        title="Energy vs Valence by Genre (Animated by Year)"
+        hover_data={
+            "mood_category": True,
+            "count": True,
+            "popularity": ":.1f",
+            "energy": ":.3f",
+            "valence": ":.3f",
+            "genre_mood": False
+        },
+        size_max=55,
+        range_x=[0, 1],
+        range_y=[0, 1],
+        title="Energy vs Valence by Genre and Mood (Animated by Year)"
     )
-    fig_anim.update_layout(**PLOTLY_TEMPLATE, height=480,
-                           title_font=dict(size=13, color="#f0c040"))
+    fig_anim.update_layout(**PLOTLY_TEMPLATE, height=520,
+                           title_font=dict(size=13, color="#f0c040"),
+                           xaxis_title="Energy",
+                           yaxis_title="Valence")
     fig_anim.update_xaxes(**AXIS_STYLE)
     fig_anim.update_yaxes(**AXIS_STYLE)
     if fig_anim.layout.updatemenus:
-        fig_anim.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 600
+        fig_anim.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 700
+        fig_anim.layout.updatemenus[0].buttons[0].args[1]["transition"]["duration"] = 300
     st.plotly_chart(fig_anim, use_container_width=True)
 
-    # Animated time-series chart, matching the cumulative reveal style from the notebook.
+    # Animated time-series chart, using cumulative frames so the line grows over time.
     st.markdown("### Animated Time-Series: Emotional Audio Features")
 
-    yearly_anim = (
-        df[(df["year"] >= year_range[0]) & (df["year"] <= year_range[1])]
+    yearly_features = (
+        df[(df["year"] >= anim_start) & (df["year"] <= anim_end)]
         .groupby("year")[["energy", "valence", "danceability"]]
         .mean()
         .reset_index()
     )
 
-    yearly_anim_long = yearly_anim.melt(
+    yearly_features_long = yearly_features.melt(
         id_vars="year",
         value_vars=["energy", "valence", "danceability"],
         var_name="Audio Feature",
@@ -695,32 +712,37 @@ with tabs[3]:
     )
 
     frames = []
-    for frame_year in sorted(yearly_anim_long["year"].unique()):
-        temp = yearly_anim_long[yearly_anim_long["year"] <= frame_year].copy()
+    for frame_year in sorted(yearly_features_long["year"].unique()):
+        temp = yearly_features_long[yearly_features_long["year"] <= frame_year].copy()
         temp["frame_year"] = frame_year
         frames.append(temp)
 
     if frames:
-        yearly_anim_cumulative = pd.concat(frames)
+        animated_df = pd.concat(frames, ignore_index=True)
 
         fig_time_anim = px.line(
-            yearly_anim_cumulative,
+            animated_df,
             x="year",
             y="Average Score",
             color="Audio Feature",
             animation_frame="frame_year",
             markers=True,
+            range_x=[anim_start, anim_end],
             range_y=[0, 1],
             title="Animated Time-Series of Emotional Audio Features",
             color_discrete_sequence=["#f87171", "#c084fc", "#4ade80"]
         )
 
-        fig_time_anim.update_layout(**PLOTLY_TEMPLATE, height=430,
-                                    title_font=dict(size=13, color="#f0c040"))
+        fig_time_anim.update_layout(**PLOTLY_TEMPLATE, height=460,
+                                    title_font=dict(size=13, color="#f0c040"),
+                                    xaxis_title="Year",
+                                    yaxis_title="Average Score")
         fig_time_anim.update_xaxes(**AXIS_STYLE)
         fig_time_anim.update_yaxes(**AXIS_STYLE)
+        fig_time_anim.update_traces(line=dict(width=2.5), marker=dict(size=6))
         if fig_time_anim.layout.updatemenus:
             fig_time_anim.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 500
+            fig_time_anim.layout.updatemenus[0].buttons[0].args[1]["transition"]["duration"] = 250
         st.plotly_chart(fig_time_anim, use_container_width=True)
 
     # Mood share over time
@@ -1029,5 +1051,4 @@ with tabs[6]:
       DSA 506 · Final Project · Shreyasee Poddar · 14,200 Songs Analyzed
     </div>
     """, unsafe_allow_html=True)
-
 
