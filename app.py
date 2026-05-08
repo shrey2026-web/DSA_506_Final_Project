@@ -643,27 +643,56 @@ with tabs[3]:
         st.plotly_chart(fig_line2, use_container_width=True)
 
     # Animated bubble: energy vs valence by year
-    # Uses cumulative frames so that early sparse years do not make the animation look empty.
-    # Each frame shows the emotional genre+mood landscape up to that year.
+    # This version uses cumulative yearly frames and initializes all genre+mood groups
+    # in the first frame, so new genres/moods can appear as the animation advances.
     st.markdown("### Animated: How Emotion Evolved Year by Year")
 
     anim_start, anim_end = int(year_range[0]), int(year_range[1])
     anim_source = df[(df["year"] >= anim_start) & (df["year"] <= anim_end)].copy()
 
-    bubble_frames = []
-    for frame_year in sorted(anim_source["year"].dropna().unique()):
-        temp_source = anim_source[anim_source["year"] <= frame_year].copy()
-        temp_grouped = temp_source.groupby(["playlist_genre", "mood_category"]).agg(
-            energy=("energy", "mean"),
-            valence=("valence", "mean"),
-            popularity=("track_popularity", "mean"),
-            count=("track_id", "count")
-        ).reset_index()
-        temp_grouped["frame_year"] = int(frame_year)
-        temp_grouped["genre_mood"] = temp_grouped["playlist_genre"] + " - " + temp_grouped["mood_category"]
-        bubble_frames.append(temp_grouped)
+    if len(anim_source) > 0:
+        # All genre+mood combinations in the selected year range.
+        all_groups = (
+            anim_source[["playlist_genre", "mood_category"]]
+            .drop_duplicates()
+            .sort_values(["playlist_genre", "mood_category"])
+            .reset_index(drop=True)
+        )
+        all_groups["genre_mood"] = all_groups["playlist_genre"] + " - " + all_groups["mood_category"]
 
-    if bubble_frames:
+        # Stable fallback coordinates for groups before they appear.
+        group_defaults = anim_source.groupby(["playlist_genre", "mood_category"]).agg(
+            default_energy=("energy", "mean"),
+            default_valence=("valence", "mean"),
+            default_popularity=("track_popularity", "mean")
+        ).reset_index()
+
+        bubble_frames = []
+        for frame_year in range(anim_start, anim_end + 1):
+            # Cumulative data up to the current frame year.
+            upto_year = anim_source[anim_source["year"] <= frame_year]
+            current = upto_year.groupby(["playlist_genre", "mood_category"]).agg(
+                energy=("energy", "mean"),
+                valence=("valence", "mean"),
+                popularity=("track_popularity", "mean"),
+                count=("track_id", "count"),
+                first_year=("year", "min")
+            ).reset_index()
+
+            frame = all_groups.merge(current, on=["playlist_genre", "mood_category"], how="left")
+            frame = frame.merge(group_defaults, on=["playlist_genre", "mood_category"], how="left")
+
+            # Before a group appears, keep it initialized but visually tiny.
+            frame["count"] = frame["count"].fillna(0)
+            frame["first_year"] = frame["first_year"].fillna(9999).astype(int)
+            frame["energy"] = frame["energy"].fillna(frame["default_energy"])
+            frame["valence"] = frame["valence"].fillna(frame["default_valence"])
+            frame["popularity"] = frame["popularity"].fillna(frame["default_popularity"])
+            frame["count_for_size"] = frame["count"].where(frame["count"] > 0, 0.01)
+            frame["status"] = np.where(frame["count"] > 0, "Visible in cumulative data", "Not appeared yet")
+            frame["frame_year"] = frame_year
+            bubble_frames.append(frame)
+
         bubble_anim = pd.concat(bubble_frames, ignore_index=True)
 
         fig_anim = px.scatter(
@@ -672,17 +701,20 @@ with tabs[3]:
             y="valence",
             animation_frame="frame_year",
             animation_group="genre_mood",
-            size="count",
+            size="count_for_size",
             color="mood_category",
             symbol="playlist_genre",
             color_discrete_map=MOOD_COLORS,
             hover_name="playlist_genre",
             hover_data={
                 "mood_category": True,
-                "count": True,
+                "count": ":.0f",
+                "first_year": True,
+                "status": True,
                 "popularity": ":.1f",
                 "energy": ":.3f",
                 "valence": ":.3f",
+                "count_for_size": False,
                 "genre_mood": False,
                 "frame_year": False
             },
@@ -701,6 +733,8 @@ with tabs[3]:
             fig_anim.layout.updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 350
             fig_anim.layout.updatemenus[0].buttons[0].args[1]["transition"]["duration"] = 100
         st.plotly_chart(fig_anim, use_container_width=True)
+    else:
+        st.warning("No songs are available for the selected year range.")
 
     # Animated time-series chart, using cumulative frames so the line grows over time.
     st.markdown("### Animated Time-Series: Emotional Audio Features")
