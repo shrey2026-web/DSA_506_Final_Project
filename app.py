@@ -303,7 +303,7 @@ fdf = fdf[(fdf["year"] >= year_range[0]) & (fdf["year"] <= year_range[1])]
 st.markdown("""
 <div class="hero-band">
   <div class="hero-badge">DSA 506 · Final Project</div>
-  <div class="hero-title">Can AI Understand Human Emotion<br>Through <span>Music?</span></div>
+  <div class="hero-title">Can <span>AI</span> Understand <span>Human Emotion</span> <br>Through <span>Music?</span></div>
   <div class="hero-rq">
     Research Question: Can data from songs - including lyrics, audio features, and artist characteristics -
     help identify emotional patterns in modern music?
