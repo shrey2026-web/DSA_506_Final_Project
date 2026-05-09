@@ -283,7 +283,7 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown(
-        "<small style='color:#4b5563'>DSA 506 · Shreyasee Poddar<br>14,200 songs · 6 genres · 4 moods</small>",
+        "<small style='color:#4b5563'>DSA 506 · Shreyasee <br>14,200 songs · 6 genres · 4 moods</small>",
         unsafe_allow_html=True
     )
 
