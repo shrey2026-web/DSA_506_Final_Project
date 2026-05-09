@@ -211,7 +211,7 @@ st.markdown("""
 # ─────────────────────────────────────────────
 @st.cache_data
 def load_data():
-    df = pd.read_csv("tableau_music_emotion_dataset.csv")
+    df = pd.read_csv("music_emotion_dataset.csv")
     df["year"] = pd.to_numeric(df["year"], errors="coerce")
     df = df.dropna(subset=["year"]).copy()
     df["year"] = df["year"].astype(int)
