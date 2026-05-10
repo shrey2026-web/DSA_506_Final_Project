@@ -267,7 +267,7 @@ with st.sidebar:
 
     st.markdown("**Year Range**")
     yr_min, yr_max = int(df["year"].min()), int(df["year"].max())
-    year_range = st.slider("Years", yr_min, yr_max, (2000, yr_max), label_visibility="collapsed")
+    year_range = st.slider("Years", yr_min, yr_max, (yr_min, yr_max), label_visibility="collapsed")
 
     st.markdown("**Feature for Analysis**")
     audio_feature = st.selectbox(
